@@ -225,6 +225,7 @@ function boot(){
   firebase.initializeApp(window.FIREBASE_CONFIG);
   const auth=firebase.auth();
   S.db=firebase.firestore();
+  try{S.db.settings({experimentalAutoDetectLongPolling:true,merge:true})}catch(_){}
   try{S.db.enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(_){}
   auth.onAuthStateChanged(async u=>{
     unsubs.forEach(f=>{try{f()}catch(_){}});unsubs=[];
@@ -240,6 +241,11 @@ function boot(){
     },e=>{S.error="sub";render()}));
     S.ready=true;render();
   });
+}
+function setMe(p){
+  S.me=p;try{localStorage.setItem("chore-me",p)}catch(_){}
+  render();
+  if(S.db&&S.uid){S.db.doc("members/"+S.uid).set({person:p}).catch(()=>{})}
 }
 async function doLogin(){
   const em=document.getElementById("li-email").value.trim(),pw=document.getElementById("li-pass").value;
@@ -441,6 +447,7 @@ function render(){
   ov.innerHTML=S.sheet?sheetHTML():"";
 }
 
+window.addEventListener("error",e=>{try{toast("Error: "+(e.message||"unknown"))}catch(_){}});
 document.addEventListener("click",ev=>{
   const el=ev.target.closest("[data-act]");if(!el)return;
   if(el.dataset.act==="close"&&ev.target.closest("[data-stop]")&&!el.matches("button"))return;
