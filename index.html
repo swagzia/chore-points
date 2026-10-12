@@ -1,0 +1,812 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0E7A64">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Chores">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Chore Points</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: phone-first single column, fixed bottom tab bar, bottom sheet for logging */
+:root{
+  --bg:#EDF0F3; --surface:#FFFFFF; --surface-2:#F6F8FA; --ink:#1A2030; --muted:#5D6575; --line:#D9DEE6;
+  --accent:#0E7A64; --accent-soft:#D7EEE8; --p1:#2B62C6; --p1-soft:#DCE6F8; --p2:#CC4560; --p2-soft:#F8DEE3;
+  --warn:#A86A12; --warn-soft:#FBEBD2; --ok:#1D814A; --ok-soft:#D9F0E2;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11151C; --surface:#1A2029; --surface-2:#212833; --ink:#E7EBF1; --muted:#9AA3B1; --line:#2D3541;
+  --accent:#3EC3A1; --accent-soft:#16352F; --p1:#7AA4F2; --p1-soft:#1D2A45; --p2:#F18299; --p2-soft:#3D1F28;
+  --warn:#E5AC52; --warn-soft:#3A2C15; --ok:#5BC888; --ok-soft:#173326; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11151C; --surface:#1A2029; --surface-2:#212833; --ink:#E7EBF1; --muted:#9AA3B1; --line:#2D3541;
+  --accent:#3EC3A1; --accent-soft:#16352F; --p1:#7AA4F2; --p1-soft:#1D2A45; --p2:#F18299; --p2-soft:#3D1F28;
+  --warn:#E5AC52; --warn-soft:#3A2C15; --ok:#5BC888; --ok-soft:#173326; color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100vh;-webkit-tap-highlight-color:transparent}
+.wrap{padding-top:calc(18px + env(safe-area-inset-top,0px))!important}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+.wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:18px 110px;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-0.01em}
+h1{font-size:1.6rem}
+h2{font-size:1.15rem}
+h3{font-size:1rem}
+.muted{color:var(--muted)}
+.small{font-size:.82rem}
+.num{font-variant-numeric:tabular-nums}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.who{display:inline-flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted)}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.dot.p1{background:var(--p1)} .dot.p2{background:var(--p2)} .dot.both{background:linear-gradient(90deg,var(--p1) 50%,var(--p2) 50%)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{border:0;border-radius:999px;padding:10px 18px;background:var(--accent);color:#fff;font-weight:600}
+:root[data-theme="dark"] .btn{color:#0B1A16}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn{color:#0B1A16}}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.sm{padding:6px 12px;font-size:.85rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.notice{background:var(--warn-soft);color:var(--ink);border-radius:var(--r);padding:12px 14px;font-size:.9rem}
+.group{display:flex;flex-direction:column;gap:10px}
+.group-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.label{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.task{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;min-width:0}
+.task:hover{border-color:var(--accent)}
+.task .name{font-weight:600;font-size:.92rem;line-height:1.25}
+.task .meta{display:flex;justify-content:space-between;width:100%;align-items:center;gap:6px}
+.pts{font-family:var(--display);font-weight:700;font-size:1.05rem;font-variant-numeric:tabular-nums}
+.pts small{font-family:var(--body);font-weight:500;font-size:.72rem;color:var(--muted);margin-left:2px}
+.prog{font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.prog.met{color:var(--ok);font-weight:600}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.list{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .main{flex:1;min-width:0}
+.row .t{font-weight:600;font-size:.92rem}
+.row .s{font-size:.8rem;color:var(--muted)}
+.chip{font-size:.72rem;font-weight:600;border-radius:999px;padding:3px 9px;white-space:nowrap}
+.chip.pending{background:var(--warn-soft);color:var(--warn)}
+.chip.approved{background:var(--ok-soft);color:var(--ok)}
+.chip.rejected{background:var(--p2-soft);color:var(--p2)}
+.acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.note{margin-top:4px;font-size:.82rem;background:var(--p2-soft);border-radius:8px;padding:6px 9px;color:var(--ink)}
+.linkbtn{border:0;background:none;padding:0;color:var(--accent);font-weight:600;font-size:.8rem;text-decoration:underline}
+.field textarea{font:inherit;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:9px 11px;width:100%;min-height:84px;resize:vertical}
+.photo-pick{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.photo-pick input[type=file]{font-size:.85rem;max-width:100%}
+.thumb{width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.viewer{background:var(--surface);border-radius:16px;padding:12px;max-width:min(640px,calc(100% - 32px));margin:auto;display:flex;flex-direction:column;gap:10px;align-items:center}
+.viewer img{max-width:100%;max-height:70vh;border-radius:10px}
+.scrim.center{align-items:center}
+.stepper{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.stepper .iconbtn{font-size:1.3rem;font-weight:600;color:var(--ink)}
+.chat{display:flex;flex-direction:column;gap:8px}
+.day-sep{align-self:center;font-size:.72rem;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-top:6px}
+.bubble{max-width:82%;padding:9px 12px;border-radius:16px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:4px;word-wrap:break-word;overflow-wrap:anywhere}
+.bubble.mine{align-self:flex-end;background:var(--accent-soft);border-color:transparent;border-bottom-right-radius:6px}
+.bubble.theirs{align-self:flex-start;border-bottom-left-radius:6px}
+.bubble.reject{border:1.5px solid var(--p2)}
+.bubble .meta{font-size:.7rem;color:var(--muted)}
+.bubble .linkbtn{align-self:flex-start}
+.bubble .tag{font-size:.72rem;font-weight:700;color:var(--p2)}
+.bubble img{max-width:220px;width:100%;border-radius:10px;cursor:pointer}
+.composer{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom,0px));background:var(--bg);padding-block:8px;display:flex;flex-direction:column;gap:8px;z-index:5}
+.composer .rowc{display:flex;gap:8px;align-items:flex-end}
+.composer textarea{flex:1;min-width:0;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:9px 14px;resize:none;min-height:42px;max-height:120px}
+.iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:50%;width:42px;height:42px;flex:none;display:inline-flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.iconbtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.iconbtn svg{width:20px;height:20px}
+.composer select{font:inherit;font-size:.85rem;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 10px;max-width:100%}
+.custom-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.custom-form .wide{grid-column:1/-1}
+@media (max-width:480px){.custom-form{grid-template-columns:1fr}}
+.empty{padding:22px 16px;text-align:center;color:var(--muted);font-size:.9rem}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;border-radius:999px;padding:7px 14px;font-weight:600;font-size:.88rem;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.period{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.arrow{border:1px solid var(--line);background:var(--surface);border-radius:50%;width:38px;height:38px;font-size:1.1rem;flex:none}
+.people{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.person{border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:2px}
+.person.p1{background:var(--p1-soft)} .person.p2{background:var(--p2-soft)}
+.person .big{font-family:var(--display);font-weight:700;font-size:2rem;font-variant-numeric:tabular-nums;line-height:1.1}
+.person.p1 .big{color:var(--p1)} .person.p2 .big{color:var(--p2)}
+.bar{height:12px;border-radius:999px;overflow:hidden;display:flex;background:var(--surface-2)}
+.bar span{display:block;height:100%}
+.bar .b1{background:var(--p1)} .bar .b2{background:var(--p2)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;min-width:0}
+.stat .v{font-family:var(--display);font-weight:700;font-size:1.2rem;font-variant-numeric:tabular-nums}
+.tbl-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+table{border-collapse:collapse;width:100%;font-size:.86rem;font-variant-numeric:tabular-nums}
+th,td{padding:9px 12px;text-align:right;white-space:nowrap;border-top:1px solid var(--line)}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;border-top:0}
+th:first-child,td:first-child{text-align:left}
+td .bar{height:8px;min-width:70px}
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:20}
+.tabs nav{max-width:640px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr)}
+.tabs button{border:0;background:transparent;padding:10px 4px 12px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.72rem;font-weight:600;color:var(--muted);position:relative}
+.tabs button[aria-current="page"]{color:var(--accent)}
+.tabs svg{width:22px;height:22px}
+.badge{position:absolute;top:5px;left:calc(50% + 6px);background:var(--p2);color:#fff;border-radius:999px;font-size:.66rem;min-width:18px;height:18px;line-height:18px;padding:0 5px}
+.scrim{position:fixed;inset:0;background:rgba(10,14,20,.45);z-index:30;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:640px;border-radius:20px 20px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px;max-height:88vh;overflow-y:auto}
+.sheet .desc{font-size:.88rem;color:var(--muted);background:var(--surface-2);border-radius:10px;padding:10px 12px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field input,.field select{font:inherit;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:9px 11px;width:100%}
+.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.choice{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:11px;font-weight:600;display:flex;align-items:center;gap:8px;justify-content:center}
+.choice[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:.88rem;z-index:40;max-width:calc(100% - 32px);text-align:center}
+.setrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 14px;border-top:1px solid var(--line)}
+.setrow:first-child{border-top:0}
+.setrow input{font:inherit;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:68px;text-align:right}
+.pick{display:flex;flex-direction:column;gap:14px;align-items:stretch}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .22s ease-out}@keyframes up{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap" id="app">
+  <div class="top"><h1>Chore Points</h1><span class="who muted small">Connecting…</span></div>
+  <div class="card muted">Loading your shared chore log…</div>
+</div>
+<div class="tabs" id="tabs" hidden></div>
+<div id="overlay"></div>
+<div id="toast"></div>
+
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="config.js"></script>
+<script>
+(function(){
+const TASKS=[
+ {id:"cook",g:"Every day",name:"Cook a meal",pts:16,freq:"2 times / day",wk:14,desc:"Prepare one meal from start to served: washing and cutting ingredients, cooking and plating. Each meal cooked counts separately."},
+ {id:"dishes",g:"Every day",name:"Wash the dishes",pts:16,freq:"1 time / day minimum",wk:7,desc:"Wash all dirty dishes, cutlery and pans from the day, dry them, and put away what has dried. Putting away the drying rack is included, not extra."},
+ {id:"cleanup",g:"Every day",name:"Clean up after yourself",pts:3,freq:"2 times / day",wk:14,desc:"After cooking or eating: wipe the worktop and stove you used, put your own dishes and cutlery into the sink, clear leftovers and packaging. Washing up is not included."},
+ {id:"tidy",g:"Every day",name:"Quick tidy-up of one room",pts:6,freq:"1 time / day",wk:7,desc:"Pick up items, return them to their places and clear the surfaces of one room. A tidy, not a clean."},
+ {id:"air",g:"Every day",name:"Air the bedroom",pts:2,freq:"1 time / day",wk:7,desc:"Open the bedroom window for at least 10 minutes and close it again."},
+ {id:"floors",g:"Weekly cleaning",name:"Mop the floors (whole flat)",pts:30,freq:"1 time / week (max)",wk:1,desc:"Mop or wash all hard floors in every room. Vacuuming is done by the robot, so it is not included. Maximum once a week."},
+ {id:"bathdeep",g:"Weekly cleaning",name:"Deep clean the bathroom",pts:20,freq:"1 time / week",wk:1,desc:"Full clean: toilet inside and outside, shower or bath, tiles, sink, taps, around the toilet, floor edges. Mirrors are a separate task."},
+ {id:"kitchendeep",g:"Weekly cleaning",name:"Deep clean the kitchen",pts:20,freq:"1 time / week",wk:1,desc:"Full clean: hob, oven, extractor hood, worktops, sink, splashback, microwave inside and outside, cooker front. Fridge and cupboards are in 'Put away groceries'."},
+ {id:"bathlight",g:"Weekly cleaning",name:"Light bathroom clean",pts:6,freq:"2 times / week",wk:2,desc:"Wipe the sink, taps, toilet seat and outside of the toilet, and the surfaces. Floors and mirrors are not included."},
+ {id:"kitchenlight",g:"Weekly cleaning",name:"Light kitchen clean",pts:6,freq:"2 times / week",wk:2,desc:"Wipe the worktops, sink, table and outside of the stove. The oven and cupboards are not included."},
+ {id:"polish",g:"Weekly cleaning",name:"Polish furniture + handles and switches",pts:8,freq:"1 time / week",wk:1,desc:"Dust and polish furniture surfaces and wipe all door handles and light switches across the whole flat."},
+ {id:"laundry",g:"Laundry, waste, plants",name:"Do the laundry (as needed)",pts:6,freq:"As needed",wk:1,desc:"One load: sort, wash, dry, fold and put away the clean clothes. Towels, pillowcases and blankets are a separate task."},
+ {id:"towels",g:"Laundry, waste, plants",name:"Wash towels, pillowcases, blankets",pts:3,freq:"2 times / week",wk:2,desc:"Wash bath towels, pillowcases and blankets or throws: wash, dry, fold and put away."},
+ {id:"linen",g:"Laundry, waste, plants",name:"Change the bed linen",pts:20,freq:"1 time every 2 weeks",wk:.5,desc:"Strip the bed, put on a clean fitted sheet, flat sheet and pillowcases, and bag the used set for laundry. Making the bed is not included."},
+ {id:"bins",g:"Laundry, waste, plants",name:"Take out the bins",pts:8,freq:"2 times / week",wk:2,desc:"Take the general waste and recycling bins to the collection point and replace the bag liners."},
+ {id:"recycling",g:"Laundry, waste, plants",name:"Sort the recycling",pts:10,freq:"1 time / week",wk:1,desc:"Sort recyclables into the right containers, rinse what needs it, and take them to the recycling point. Bins are a separate task."},
+ {id:"plants",g:"Laundry, waste, plants",name:"Water the plants",pts:5,freq:"1 time / week",wk:1,desc:"Water all the plants in the flat and check the soil and leaves."},
+ {id:"bigshop",g:"Shopping",name:"Grocery shopping (big shop)",pts:35,freq:"1 time / month",wk:.25,desc:"The monthly main shop: writing the list, going to the supermarket, carrying the shopping home. Unpacking is a separate task."},
+ {id:"smallshop",g:"Shopping",name:"Small grocery run",pts:5,freq:"Occasional",wk:1,desc:"A quick trip to the nearby shop for missing items. Not a big shop."},
+ {id:"putaway",g:"Shopping",name:"Put away groceries + clean cupboards and fridge",pts:20,freq:"1 time / month (with big shop)",wk:.25,desc:"Unpack all groceries and put them in place, empty the fridge and cupboards, wipe the shelves, and throw out expired food."},
+ {id:"windows",g:"Monthly",name:"Clean the windows (whole flat)",pts:14,freq:"1 time / month",wk:.25,desc:"Clean the glass of every window and glass door, the surfaces that can be reached safely, frames and sills included."},
+ {id:"mirrors",g:"Monthly",name:"Clean the mirrors",pts:10,freq:"1 time / month",wk:.25,desc:"Clean every mirror in the flat so it is streak-free, including edges and frames."}
+];
+const BASE_GROUPS=[...new Set(TASKS.map(t=>t.g))];
+const DEFAULT_CFG={names:{p1:"Volodymyr",p2:"Letizia"},split:.5,factor:.5,rejectFactor:0,points:{},custom:[],hidden:[],edits:{},startMonth:"2026-10"};
+function customTasks(){return Array.isArray(S.cfg.custom)?S.cfg.custom:[]}
+function editsMap(){return S.cfg.edits&&typeof S.cfg.edits==="object"?S.cfg.edits:{}}
+function allTasks(){const ed=editsMap();return TASKS.concat(customTasks()).map(t=>ed[t.id]?{...t,...ed[t.id]}:t)}
+function isBuiltin(id){return TASKS.some(t=>t.id===id)}
+function hiddenIds(){return Array.isArray(S.cfg.hidden)?S.cfg.hidden:[]}
+function visibleTasks(){const h=hiddenIds();return allTasks().filter(t=>!t.archived&&!h.includes(t.id))}
+function removedTasks(){const h=hiddenIds();return allTasks().filter(t=>t.archived||h.includes(t.id))}
+function taskOf(id){return allTasks().find(t=>t.id===id)}
+function groups(){return[...new Set(visibleTasks().map(t=>t.g))]}
+const WINDOW_DAYS=75;
+const APP_VERSION="6 (12 Oct 2026)";
+
+const S={db:null,user:null,uid:null,me:null,canWrite:true,cfg:structuredClone(DEFAULT_CFG),entries:[],ready:false,
+  view:"log",mode:"week",anchor:todayStr(),sheet:null,rsheet:null,esheet:null,xsheet:null,photo:null,msgs:[],chatDraft:"",chatPhoto:null,chatBusy:false,lastSeenCount:0,confirmDel:null,confirmDelTask:null,history:null,histLoading:false,rangeCache:{},error:null};
+let pendingWho=null;
+
+/* ---------- dates ---------- */
+function pad(n){return String(n).padStart(2,"0")}
+function ymd(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
+function parse(s){const[a,b,c]=s.split("-").map(Number);return new Date(a,b-1,c)}
+function todayStr(){return ymd(new Date())}
+function addDays(s,n){const d=parse(s);d.setDate(d.getDate()+n);return ymd(d)}
+function isoWeek(s){const d=parse(s);const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const day=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-day);const y=t.getUTCFullYear();const w=Math.ceil(((t-Date.UTC(y,0,1))/864e5+1)/7);return{y,w}}
+function weekKey(s){const{y,w}=isoWeek(s);return y+"-W"+pad(w)}
+function monday(s){const d=parse(s);const day=d.getDay()||7;d.setDate(d.getDate()-day+1);return ymd(d)}
+function monthStart(s){return s.slice(0,7)+"-01"}
+function nextMonth(s){const d=parse(monthStart(s));d.setMonth(d.getMonth()+1);return ymd(d)}
+function prevMonth(s){const d=parse(monthStart(s));d.setMonth(d.getMonth()-1);return ymd(d)}
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONL=["January","February","March","April","May","June","July","August","September","October","November","December"];
+function fmtShort(s){const d=parse(s);return d.getDate()+" "+MON[d.getMonth()]}
+function fmtDay(s){const t=todayStr();if(s===t)return"Today";if(s===addDays(t,-1))return"Yesterday";const d=parse(s);return["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()]+" "+fmtShort(s)}
+
+/* ---------- points ---------- */
+function ptsOf(id){const v=S.cfg.points&&S.cfg.points[id];if(typeof v==="number")return v;const t=taskOf(id);return t?Number(t.pts)||0:0}
+function cnt(e){return Math.max(1,Math.min(20,Math.round(Number(e.count)||1)))}
+function credit(e){const base=ptsOf(e.task)*cnt(e);const v=e.status==="approved"?base:e.status==="rejected"?base*(Number(S.cfg.rejectFactor)||0):base*S.cfg.factor;
+  if(e.doer==="p1")return[v,0];if(e.doer==="p2")return[0,v];return[v*S.cfg.split,v*(1-S.cfg.split)]}
+function totals(list){let a=0,b=0,pend=0;for(const e of list){const[x,y]=credit(e);a+=x;b+=y;if(isPending(e))pend++}return{a,b,t:a+b,pend}}
+function isPending(e){return e.status!=="approved"&&e.status!=="rejected"}
+function fmt(n){return Math.round(n*10)/10%1===0?String(Math.round(n)):(Math.round(n*10)/10).toFixed(1)}
+function nm(p){return p==="both"?"Together":(S.cfg.names[p]||(p==="p1"?"Person 1":"Person 2"))}
+function other(p){return p==="p1"?"p2":"p1"}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+/* ---------- data access ---------- */
+function inWindow(start){return start>=addDays(todayStr(),-WINDOW_DAYS+1)}
+function entriesBetween(start,end){ // [start,end)
+  if(inWindow(start))return S.entries.filter(e=>e.date>=start&&e.date<end);
+  const k=start+"|"+end;const c=S.rangeCache[k];
+  if(c&&c.data)return c.data;
+  if(!c&&S.db){S.rangeCache[k]={loading:true};
+    S.db.collection("entries").where("date",">=",start).where("date","<",end).limit(1000).get()
+      .then(s=>{S.rangeCache[k]={data:s.docs.map(d=>({id:d.id,...d.data()}))};render()})
+      .catch(()=>{S.rangeCache[k]={data:[]};render()});}
+  return null;
+}
+
+/* ---------- boot ---------- */
+let unsubs=[];
+function boot(){
+  if(!window.firebase||!window.FIREBASE_CONFIG||!window.FIREBASE_CONFIG.apiKey||window.FIREBASE_CONFIG.apiKey.indexOf("PASTE")===0){S.error="config";render();return}
+  firebase.initializeApp(window.FIREBASE_CONFIG);
+  const auth=firebase.auth();
+  S.db=firebase.firestore();
+  try{S.db.settings({experimentalAutoDetectLongPolling:true,merge:true})}catch(_){}
+  try{S.db.enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(_){}
+  auth.onAuthStateChanged(async u=>{
+    unsubs.forEach(f=>{try{f()}catch(_){}});unsubs=[];
+    S.entries=[];S.me=null;S.error=null;
+    if(!u){S.uid=null;S.ready=true;S.login=true;render();return}
+    S.login=false;S.uid=u.uid;S.email=u.email;
+    unsubs.push(S.db.doc("config/main").onSnapshot(s=>{const d=s.exists?s.data():{};S.cfg={...DEFAULT_CFG,...d,names:{...DEFAULT_CFG.names,...(d.names||{})},points:{...(d.points||{})},custom:Array.isArray(d.custom)?d.custom:[],edits:{...(d.edits||{})}};render()},e=>{S.error="denied";render()}));
+    try{const m=await S.db.doc("members/"+S.uid).get();if(m.exists)S.me=m.data().person||null}catch(e){S.error="denied";render();return}
+    if(!S.me){try{S.me=localStorage.getItem("chore-me")}catch(_){}}
+    const since=addDays(todayStr(),-WINDOW_DAYS+1);
+    unsubs.push(S.db.collection("entries").where("date",">=",since).limit(1000).onSnapshot(s=>{
+      S.entries=s.docs.map(d=>({id:d.id,...d.data()}));S.ready=true;render();
+    },e=>{S.error="sub";render()}));
+    unsubs.push(S.db.collection("messages").orderBy("createdAt","desc").limit(150).onSnapshot(s=>{
+      S.msgs=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.createdAt||"").localeCompare(b.createdAt||""));render();
+    },()=>{}));
+    S.ready=true;render();
+  });
+}
+function setMe(p){
+  S.me=p;try{localStorage.setItem("chore-me",p)}catch(_){}
+  render();
+  if(S.db&&S.uid){S.db.doc("members/"+S.uid).set({person:p}).catch(()=>{})}
+}
+async function doLogin(){
+  const em=document.getElementById("li-email").value.trim(),pw=document.getElementById("li-pass").value;
+  const btn=document.getElementById("li-go");btn.disabled=true;S.loginErr="";
+  try{await firebase.auth().signInWithEmailAndPassword(em,pw)}
+  catch(e){btn.disabled=false;S.loginErr=(e&&(e.code==="auth/invalid-credential"||e.code==="auth/wrong-password"||e.code==="auth/user-not-found"))?"Wrong email or password.":"Could not sign in. Check your connection and try again.";render()}
+}
+function viewLogin(){
+  return '<div class="top"><h1>Chore Points</h1></div><div class="card pick"><h2>Sign in</h2><p class="muted" style="margin:0">Use the email and password set up for you. You stay signed in on this phone.</p>'+
+   '<div class="field"><label class="label" for="li-email">Email</label><input id="li-email" type="email" autocomplete="username" inputmode="email"></div>'+
+   '<div class="field"><label class="label" for="li-pass">Password</label><input id="li-pass" type="password" autocomplete="current-password"></div>'+
+   (S.loginErr?'<div class="notice">'+esc(S.loginErr)+'</div>':'')+
+   '<div class="actions"><button class="btn" id="li-go" data-act="login">Sign in</button></div></div>';
+}
+
+/* ---------- actions ---------- */
+let toastT;
+function toast(msg){const t=document.getElementById("toast");t.innerHTML='<div class="toast" role="status">'+esc(msg)+'</div>';clearTimeout(toastT);toastT=setTimeout(()=>t.innerHTML="",2600)}
+async function logTask(){
+  const sh=S.sheet;if(!sh||!S.db)return;
+  const doer=sh.who==="both"?"both":S.me;
+  const btn=document.getElementById("save");if(btn)btn.disabled=true;
+  try{
+    const rec={task:sh.task,date:sh.date,doer,count:Math.max(1,sh.count||1),loggedBy:S.me,status:"pending",createdAt:new Date().toISOString()};
+    if(sh.photo){rec.photo=await savePhoto(sh.photo)}
+    await S.db.collection("entries").add(rec);
+    S.sheet=null;render();toast("Logged. Waiting for "+nm(other(S.me))+" to approve.");
+  }catch(e){if(btn)btn.disabled=false;toast(e&&e.code==="quota_exceeded"?"Storage is full. Ask Claude to archive old entries.":"Could not save. Check your connection and try again.")}
+}
+async function setStatus(id,status){
+  const now=new Date().toISOString();
+  const upd=status==="approved"?{status,approvedBy:S.me,approvedAt:now,rejectedBy:null,rejectedAt:null,rejectNote:null,rejectPhoto:null}
+    :{status:"pending",approvedBy:null,approvedAt:null,rejectedBy:null,rejectedAt:null,rejectNote:null,rejectPhoto:null};
+  try{await S.db.doc("entries/"+id).update(upd);
+    toast(status==="approved"?"Approved. Full points counted.":"Back to waiting for review.")}
+  catch(_){toast("Could not update. Try again.")}
+}
+async function savePhoto(dataUrl){
+  const ref=await S.db.collection("photos").add({data:dataUrl,by:S.me,createdAt:new Date().toISOString()});
+  return ref.id;
+}
+function compressImage(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>{const img=new Image();
+      img.onload=()=>{const m=1000;const sc=Math.min(1,m/Math.max(img.width,img.height));const w=Math.round(img.width*sc),h=Math.round(img.height*sc);
+        const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);res(c.toDataURL("image/jpeg",0.7))};
+      img.onerror=()=>rej(new Error("image"));img.src=r.result};
+    r.onerror=()=>rej(new Error("read"));r.readAsDataURL(file);
+  });
+}
+async function rejectTask(){
+  const rs=S.rsheet;if(!rs)return;
+  const ta=document.getElementById("rj-note");if(ta)rs.note=ta.value;
+  const note=(rs.note||"").trim();
+  if(!note){rs.err="Write a short reason so your partner knows what to fix.";render();return}
+  const btn=document.getElementById("rj-go");if(btn)btn.disabled=true;
+  try{
+    const upd={status:"rejected",rejectedBy:S.me,rejectedAt:new Date().toISOString(),rejectNote:note.slice(0,1000),approvedBy:null,approvedAt:null};
+    upd.rejectPhoto=rs.photo?await savePhoto(rs.photo):null;
+    await S.db.doc("entries/"+rs.id).update(upd);
+    const ent=S.entries.find(x=>x.id===rs.id);const tk=ent&&taskOf(ent.task);
+    S.db.collection("messages").add({from:S.me,kind:"reject",entryId:rs.id,task:tk?tk.name:"",text:upd.rejectNote,photo:upd.rejectPhoto||null,createdAt:new Date().toISOString()}).catch(()=>{});
+    S.rsheet=null;render();toast("Rejected. "+nm(other(S.me))+" will see it in Chat.");
+  }catch(_){if(btn)btn.disabled=false;toast("Could not save. Check your connection and try again.")}
+}
+function lastRead(){try{return localStorage.getItem("chore-lastread-"+S.me)||""}catch(_){return(S._lr||{})[S.me]||""}}
+function setLastRead(v){S._lr=S._lr||{};S._lr[S.me]=v;try{localStorage.setItem("chore-lastread-"+S.me,v)}catch(_){}}
+function unreadCount(){const lr=lastRead();return S.msgs.filter(m=>m.from!==S.me&&(m.createdAt||"")>lr).length}
+async function sendMessage(){
+  const ta=document.getElementById("chat-input");if(ta)S.chatDraft=ta.value;
+  const text=(S.chatDraft||"").trim();
+  if(!text&&!S.chatPhoto)return;
+  const btn=document.getElementById("chat-send");if(btn)btn.disabled=true;
+  try{
+    const msg={from:S.me,kind:"text",text:text.slice(0,2000),photo:null,createdAt:new Date().toISOString()};
+    if(S.chatPhoto)msg.photo=await savePhoto(S.chatPhoto);
+    await S.db.collection("messages").add(msg);
+    S.chatDraft="";S.chatPhoto=null;render();scrollChat();
+  }catch(_){if(btn)btn.disabled=false;toast("Could not send. Check your connection and try again.")}
+}
+function scrollChat(){requestAnimationFrame(()=>window.scrollTo(0,document.body.scrollHeight))}
+async function openPhoto(pid){
+  S.photo={loading:true};render();
+  try{const d=await S.db.doc("photos/"+pid).get();S.photo=d.exists?{src:d.data().data}:{err:"Photo not found."}}
+  catch(_){S.photo={err:"Could not load the photo."}}
+  render();
+}
+async function addCustomTask(){
+  const f=id=>document.getElementById(id);
+  const name=f("ct-name").value.trim();
+  if(!name){toast("Give the task a name.");return}
+  const t={id:"c"+Date.now().toString(36),name:name.slice(0,80),g:f("ct-group").value||"Other",pts:Math.max(0,Number(f("ct-pts").value)||0),
+    freq:f("ct-freq").value.trim().slice(0,60)||"As needed",wk:Math.max(0,Number(f("ct-wk").value)||0),desc:f("ct-desc").value.trim().slice(0,400)||"No details added."};
+  const custom=customTasks().concat([t]);
+  try{await S.db.doc("config/main").set({...S.cfg,custom});toast("Task added for both of you.")}catch(_){toast("Could not add the task.")}
+}
+async function hideTask(id){
+  const hidden=[...new Set(hiddenIds().concat([id]))];
+  S.confirmDelTask=null;
+  try{await S.db.doc("config/main").set({...S.cfg,hidden});toast("Task removed from the list. Past entries keep their points.")}catch(_){toast("Could not remove the task.")}
+}
+async function restoreTask(id){
+  const hidden=hiddenIds().filter(x=>x!==id);
+  const custom=customTasks().map(t=>t.id===id?{...t,archived:false}:t);
+  try{await S.db.doc("config/main").set({...S.cfg,hidden,custom});toast("Task is back in the list.")}catch(_){toast("Could not restore the task.")}
+}
+async function delEntry(id){
+  try{await S.db.doc("entries/"+id).delete();S.confirmDel=null;S.rangeCache={};render();toast("Entry deleted.")}catch(_){toast("Could not delete. Try again.")}
+}
+async function saveSettings(){
+  const f=id=>document.getElementById(id);
+  const n1=f("s-n1").value.trim()||"Person 1",n2=f("s-n2").value.trim()||"Person 2";
+  const split=Math.min(100,Math.max(0,Number(f("s-split").value)||0))/100;
+  const factor=Math.min(100,Math.max(0,Number(f("s-factor").value)||0))/100;
+  const rejectFactor=Math.min(100,Math.max(0,Number(f("s-rfactor").value)||0))/100;
+  const points={...(S.cfg.points||{})};for(const t of visibleTasks()){const el=f("pt-"+t.id);if(!el)continue;const v=Number(el.value);if(isNaN(v))continue;if(isBuiltin(t.id)){const base=TASKS.find(x=>x.id===t.id).pts;if(v!==base)points[t.id]=v;else delete points[t.id]}else if(v!==Number(t.pts))points[t.id]=v;else delete points[t.id]}
+  try{await S.db.doc("config/main").set({...S.cfg,names:{p1:n1,p2:n2},split,factor,rejectFactor,points});toast("Settings saved for both of you.")}
+  catch(_){toast("Could not save settings.")}
+}
+async function loadHistory(){
+  if(!S.db||S.histLoading)return;S.histLoading=true;render();
+  const months=[];let m=S.cfg.startMonth+"-01";const end=nextMonth(todayStr());
+  while(m<end){months.push(m);m=nextMonth(m)}
+  const all=[];
+  for(const ms of months){try{const s=await S.db.collection("entries").where("date",">=",ms).where("date","<",nextMonth(ms)).limit(1000).get();s.docs.forEach(d=>all.push({id:d.id,...d.data()}))}catch(_){}}
+  S.history={months,entries:all};S.histLoading=false;render();
+}
+
+/* ---------- views ---------- */
+const ICON={
+ log:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+ approve:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+ summary:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+ history:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+ chat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>',
+ settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>'};
+
+function toApprove(){return S.entries.filter(e=>isPending(e)&&e.loggedBy&&e.loggedBy!==S.me).sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||"").localeCompare(a.createdAt||""))}
+
+function header(){
+  const me=S.me?'<span class="who"><span class="dot '+S.me+'"></span>This phone: '+esc(nm(S.me))+'</span>':'';
+  return '<div class="top"><h1>Chore Points</h1>'+me+'</div>';
+}
+
+function viewPick(){
+  return header()+'<div class="card pick"><h2>Who uses this phone?</h2><p class="muted" style="margin:0">Pick your name once. Tasks you log are credited to you, and you approve your partner\'s tasks.</p>'+
+   '<div class="choices">'+["p1","p2"].map(p=>'<button class="choice" data-act="setme" data-p="'+p+'"><span class="dot '+p+'"></span>'+esc(nm(p))+'</button>').join("")+'</div></div>';
+}
+
+function viewLog(){
+  const t=todayStr(),ws=monday(t),we=addDays(ws,7);
+  const week=S.entries.filter(e=>e.date>=ws&&e.date<we);
+  const count={};week.forEach(e=>count[e.task]=(count[e.task]||0)+cnt(e));
+  const today=S.entries.filter(e=>e.date===t);
+  const tt=totals(week);
+  let h=header();
+  if(!S.canWrite)h+='<div class="notice">You can view this page but not log tasks. Ask the owner to share it with you as an Editor.</div>';
+  h+='<div class="card"><div class="group-head"><span class="label">This week</span><span class="small muted">'+fmtShort(ws)+' – '+fmtShort(addDays(we,-1))+'</span></div>'+
+     '<div class="people" style="margin-top:10px">'+["p1","p2"].map((p,i)=>'<div class="person '+p+'"><span class="small">'+esc(nm(p))+'</span><span class="big">'+fmt(i?tt.b:tt.a)+'</span><span class="small muted">points</span></div>').join("")+'</div></div>';
+  for(const g of groups()){
+    h+='<section class="group"><div class="group-head"><h2>'+esc(g)+'</h2></div><div class="grid">';
+    for(const tk of visibleTasks().filter(x=>x.g===g)){
+      const c=count[tk.id]||0;const target=tk.wk>=1?Math.round(tk.wk):null;
+      const prog=target?'<span class="prog'+(c>=target?' met':'')+'">'+c+' / '+target+' this week</span>':'<span class="prog">'+c+' this week · '+esc(String(tk.freq||"").toLowerCase())+'</span>';
+      h+='<button class="task" data-act="open" data-task="'+tk.id+'"'+(S.canWrite?'':' disabled')+'><span class="name">'+esc(tk.name)+'</span><span class="meta"><span class="pts">'+fmt(ptsOf(tk.id))+'<small>pts</small></span></span>'+prog+'</button>';
+    }
+    h+='</div></section>';
+  }
+  h+='<section class="group"><div class="group-head"><h2>Logged today</h2><span class="small muted">'+today.length+' tasks</span></div>'+entryList(today,true)+'</section>';
+  return h;
+}
+
+function entryList(list,showDel){
+  if(!list.length)return'<div class="list"><div class="empty">Nothing logged yet. Tap a task above when it is done.</div></div>';
+  list=[...list].sort((a,b)=>b.date.localeCompare(a.date)||(b.createdAt||"").localeCompare(a.createdAt||""));
+  return'<div class="list">'+list.map(e=>{
+    const tk=taskOf(e.task);const[x,y]=credit(e);const pts=x+y;
+    const st=statusChip(e);
+    let act="";
+    if(showDel)act=entryActions(e);
+    return'<div class="row"><span class="dot '+e.doer+'"></span><div class="main"><div class="t">'+esc(tk?tk.name:e.task)+(cnt(e)>1?' <span class="muted">×'+cnt(e)+'</span>':'')+'</div><div class="s">'+esc(nm(e.doer))+' · '+fmtDay(e.date)+' · <span class="num">'+fmt(pts)+' pts</span>'+photoLink(e.photo,"photo")+'</div>'+rejectInfo(e)+'</div>'+st+act+'</div>';
+  }).join("")+'</div>';
+}
+function statusChip(e){
+  if(e.status==="approved")return'<span class="chip approved">Approved</span>';
+  if(e.status==="rejected")return'<span class="chip rejected">Rejected</span>';
+  return'<span class="chip pending">Waiting · '+Math.round(S.cfg.factor*100)+'% pts</span>';
+}
+function stepper(label,v,act){
+  return'<div class="field"><span class="label">'+label+'</span><div class="stepper"><button class="iconbtn" data-act="'+act+'" data-d="-1" aria-label="Fewer">−</button><span class="pts num">'+v+'</span><button class="iconbtn" data-act="'+act+'" data-d="1" aria-label="More">+</button><span class="small muted">'+(v>1?'Counts as '+v+' separate times':'')+'</span></div></div>';
+}
+function entryActions(e){
+  if(!S.canWrite)return"";
+  if(S.confirmDel===e.id)return'<div class="acts"><button class="btn sm" data-act="del" data-id="'+e.id+'">Delete</button><button class="btn sm ghost" data-act="nodel">Keep</button></div>';
+  return'<div class="acts"><button class="btn sm ghost" data-act="editentry" data-id="'+e.id+'">Edit</button><button class="btn sm ghost" data-act="askdel" data-id="'+e.id+'" aria-label="Delete entry">✕</button></div>';
+}
+function photoLink(pid,label){return pid?' · <button class="linkbtn" data-act="photo" data-pid="'+esc(pid)+'">'+label+'</button>':''}
+function rejectInfo(e){
+  if(e.status!=="rejected")return"";
+  return'<div class="note"><b>'+esc(nm(e.rejectedBy||other(e.loggedBy)))+':</b> '+esc(e.rejectNote||"No comment.")+(e.rejectPhoto?' <button class="linkbtn" data-act="photo" data-pid="'+esc(e.rejectPhoto)+'">See photo</button>':'')+'</div>';
+}
+
+function viewApprove(){
+  const list=toApprove();
+  let h=header()+'<div><h2>Waiting for your approval</h2><p class="muted small" style="margin:4px 0 0">Tasks '+esc(nm(other(S.me)))+' logged. Until you approve, they count for half points.</p></div>';
+  if(!list.length)return h+'<div class="list"><div class="empty">All caught up. New tasks from '+esc(nm(other(S.me)))+' will appear here.</div></div>'+reviewedAndRejected();
+  h+='<div class="list">'+list.map(e=>{const tk=taskOf(e.task);const full=ptsOf(e.task)*cnt(e);
+    return'<div class="row"><span class="dot '+e.doer+'"></span><div class="main"><div class="t">'+esc(tk?tk.name:e.task)+(cnt(e)>1?' <span class="muted">×'+cnt(e)+'</span>':'')+'</div><div class="s">'+esc(nm(e.doer))+' · '+fmtDay(e.date)+' · <span class="num">'+fmt(full)+' pts if approved</span>'+photoLink(e.photo,"photo")+'</div></div>'+
+    '<div class="acts"><button class="btn sm ghost" data-act="reject" data-id="'+e.id+'">Reject</button><button class="btn sm" data-act="approve" data-id="'+e.id+'">Approve</button></div></div>'}).join("")+'</div>';
+  return h+reviewedAndRejected();
+}
+
+function reviewedAndRejected(){
+  let h="";
+  const since=addDays(todayStr(),-14);
+  const mine=S.entries.filter(e=>e.status==="rejected"&&e.loggedBy===S.me&&e.date>=since).sort((a,b)=>(b.rejectedAt||"").localeCompare(a.rejectedAt||""));
+  if(mine.length)h+='<section class="group"><h3>Your tasks that were rejected</h3><p class="small muted" style="margin:0">Last 14 days. Fix it and log the task again, or talk it over.</p><div class="list">'+mine.map(e=>{const tk=taskOf(e.task);
+    return'<div class="row"><span class="dot '+e.doer+'"></span><div class="main"><div class="t">'+esc(tk?tk.name:e.task)+'</div><div class="s">'+fmtDay(e.date)+'</div>'+rejectInfo(e)+'</div><span class="chip rejected">Rejected</span></div>'}).join("")+'</div></section>';
+  const recent=S.entries.filter(e=>(e.status==="approved"&&e.approvedBy===S.me)||(e.status==="rejected"&&e.rejectedBy===S.me))
+    .sort((a,b)=>((b.approvedAt||b.rejectedAt||"")).localeCompare(a.approvedAt||a.rejectedAt||"")).slice(0,6);
+  if(recent.length)h+='<section class="group"><h3>Recently reviewed by you</h3><div class="list">'+recent.map(e=>{const tk=taskOf(e.task);
+    return'<div class="row"><span class="dot '+e.doer+'"></span><div class="main"><div class="t">'+esc(tk?tk.name:e.task)+'</div><div class="s">'+esc(nm(e.doer))+' · '+fmtDay(e.date)+'</div>'+rejectInfo(e)+'</div>'+statusChip(e)+'<button class="btn sm ghost" data-act="unapprove" data-id="'+e.id+'">Undo</button>'+entryActions(e)+'</div>'}).join("")+'</div></section>';
+  return h;
+}
+
+const CAM='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+function hhmm(iso){const d=new Date(iso);return pad(d.getHours())+":"+pad(d.getMinutes())}
+function viewChat(){
+  let h=header()+'<div><h2>Chat</h2><p class="small muted" style="margin:4px 0 0">Talk with '+esc(nm(other(S.me)))+'. Rejected tasks also show up here.</p></div>';
+  h+='<div class="chat">';
+  if(!S.msgs.length)h+='<div class="list"><div class="empty">No messages yet. Ask '+esc(nm(other(S.me)))+' about a task, or just say hi.</div></div>';
+  let lastDay="";
+  for(const m of S.msgs){
+    const day=m.createdAt?ymd(new Date(m.createdAt)):"";
+    if(day&&day!==lastDay){h+='<div class="day-sep">'+fmtDay(day)+'</div>';lastDay=day}
+    const mine=m.from===S.me;
+    h+='<div class="bubble '+(mine?'mine':'theirs')+(m.kind==="reject"?' reject':'')+'">'+
+      (m.kind==="reject"?'<span class="tag">Rejected: '+esc(m.task||"task")+'</span>':'')+
+      (m.text?'<span>'+esc(m.text)+'</span>':'')+
+      (m.photo?'<button class="linkbtn" data-act="photo" data-pid="'+esc(m.photo)+'">See photo</button>':'')+
+      '<span class="meta">'+esc(nm(m.from))+' · '+(m.createdAt?hhmm(m.createdAt):'')+'</span></div>';
+  }
+  h+='</div>';
+  const opts=visibleTasks().map(t=>'<option value="'+t.id+'">'+esc(t.name)+'</option>').join("");
+  h+='<div class="composer">'+
+    '<select id="chat-ask" aria-label="Ask for a task"><option value="">Ask for a task…</option>'+opts+'</select>'+
+    (S.chatPhoto?'<div class="photo-pick"><img class="thumb" src="'+S.chatPhoto+'" alt="Photo to send"><button class="btn sm ghost" data-act="chatnophoto">Remove photo</button></div>':'')+
+    (S.chatBusy?'<span class="small muted">Preparing photo…</span>':'')+
+    '<div class="rowc"><label class="iconbtn" aria-label="Add a photo">'+CAM+'<input id="chat-photo" type="file" accept="image/*"></label>'+
+    '<textarea id="chat-input" rows="1" maxlength="2000" placeholder="Message">'+esc(S.chatDraft||"")+'</textarea>'+
+    '<button class="btn" id="chat-send" data-act="send">Send</button></div></div>';
+  return h;
+}
+
+function summaryBlock(list){
+  const t=totals(list);const sa=t.t?t.a/t.t:0,sb=t.t?t.b/t.t:0;
+  return'<div class="people">'+["p1","p2"].map((p,i)=>'<div class="person '+p+'"><span class="small">'+esc(nm(p))+'</span><span class="big">'+fmt(i?t.b:t.a)+'</span><span class="small muted num">'+Math.round((i?sb:sa)*100)+'% of the total</span></div>').join("")+'</div>'+
+   '<div class="bar" aria-label="Share of points"><span class="b1" style="width:'+(sa*100)+'%"></span><span class="b2" style="width:'+(sb*100)+'%"></span></div>'+
+   '<div class="stats"><div class="stat"><div class="label">Couple</div><div class="v">'+fmt(t.t)+'</div></div><div class="stat"><div class="label">Gap</div><div class="v">'+fmt(Math.abs(t.a-t.b))+'</div></div><div class="stat"><div class="label">Waiting</div><div class="v">'+t.pend+'</div></div></div>';
+}
+
+function viewSummary(){
+  let start,end,title,sub;
+  if(S.mode==="week"){start=monday(S.anchor);end=addDays(start,7);const{w,y}=isoWeek(start);title="Week "+w+", "+y;sub=fmtShort(start)+" – "+fmtShort(addDays(end,-1))}
+  else{start=monthStart(S.anchor);end=nextMonth(start);const d=parse(start);title=MONL[d.getMonth()]+" "+d.getFullYear();sub="Whole month"}
+  let h=header()+'<div class="seg" role="group" aria-label="Period"><button data-act="mode" data-m="week" aria-pressed="'+(S.mode==="week")+'">Week</button><button data-act="mode" data-m="month" aria-pressed="'+(S.mode==="month")+'">Month</button></div>'+
+    '<div class="period"><button class="arrow" data-act="prev" aria-label="Previous">‹</button><div style="text-align:center"><h2>'+title+'</h2><div class="small muted">'+sub+'</div></div><button class="arrow" data-act="next" aria-label="Next">›</button></div>';
+  const list=entriesBetween(start,end);
+  if(!list)return h+'<div class="card muted">Loading this period…</div>';
+  h+=summaryBlock(list);
+  if(S.mode==="week"){const ps=addDays(start,-7);const two=entriesBetween(ps,end);
+    h+='<section class="group"><div class="group-head"><h2>Two-week balance</h2><span class="small muted">'+fmtShort(ps)+' – '+fmtShort(addDays(end,-1))+'</span></div><p class="small muted" style="margin:0">This week plus the one before. Bed linen is changed every two weeks, so this is the fairer comparison.</p>'+(two?summaryBlock(two):'<div class="card muted">Loading…</div>')+'</section>';}
+  h+='<section class="group"><h2>Tasks in this period</h2>'+entryList(list,true)+'</section>';
+  return h;
+}
+
+function viewHistory(){
+  let h=header()+'<div class="top"><div><h2>History</h2><p class="small muted" style="margin:4px 0 0">Every month and week since '+esc(S.cfg.startMonth)+'.</p></div><button class="btn sm ghost" data-act="hist">'+(S.histLoading?"Loading…":"Refresh")+'</button></div>';
+  if(!S.history){if(!S.histLoading)setTimeout(loadHistory,0);return h+'<div class="card muted">Loading history…</div>'}
+  const E=S.history.entries;
+  const rowsFor=(keys,keyOf,label)=>{const by={};for(const e of E){const k=keyOf(e.date);(by[k]=by[k]||[]).push(e)}
+    return keys.map(k=>{const t=totals(by[k]||[]);const sa=t.t?t.a/t.t:0;
+      return'<tr><td>'+label(k)+'</td><td>'+fmt(t.a)+'</td><td>'+fmt(t.b)+'</td><td>'+fmt(t.t)+'</td><td>'+(t.t?Math.round(sa*100)+'%':'–')+'</td><td>'+(t.t?fmt(Math.abs(t.a-t.b)):'–')+'</td><td><div class="bar"><span class="b1" style="width:'+(sa*100)+'%"></span><span class="b2" style="width:'+(t.t?(1-sa)*100:0)+'%"></span></div></td></tr>'}).join("")};
+  const head='<tr><th>Period</th><th>'+esc(nm("p1"))+'</th><th>'+esc(nm("p2"))+'</th><th>Couple</th><th>'+esc(nm("p1"))+' %</th><th>Gap</th><th>Split</th></tr>';
+  const months=[...S.history.months].reverse();
+  h+='<section class="group"><h3>By month</h3><div class="tbl-wrap"><table>'+head+rowsFor(months,d=>d.slice(0,7)+"-01",k=>{const d=parse(k);return MON[d.getMonth()]+" "+d.getFullYear()})+'</table></div></section>';
+  const weeks=[];let w=monday(S.cfg.startMonth+"-01");const lim=todayStr();while(w<=lim){weeks.push(w);w=addDays(w,7)}weeks.reverse();
+  h+='<section class="group"><h3>By week</h3><div class="tbl-wrap"><table>'+head+rowsFor(weeks,d=>monday(d),k=>{const{w}=isoWeek(k);return"W"+w+" · "+fmtShort(k)})+'</table></div></section>';
+  return h;
+}
+
+function viewSettings(){
+  const c=S.cfg;const dis=S.canWrite?"":" disabled";
+  let h=header()+'<h2>Settings</h2><p class="small muted" style="margin:0">Shared by both phones. Changes apply to all past and future points.</p>'+
+  '<div class="card" style="display:flex;flex-direction:column;gap:12px">'+
+   '<div class="field"><label class="label" for="s-n1">Person 1</label><input id="s-n1" value="'+esc(c.names.p1)+'"'+dis+'></div>'+
+   '<div class="field"><label class="label" for="s-n2">Person 2</label><input id="s-n2" value="'+esc(c.names.p2)+'"'+dis+'></div>'+
+   '<div class="field"><label class="label" for="s-split">Share of a shared task credited to '+esc(c.names.p1)+' (%)</label><input id="s-split" type="number" min="0" max="100" value="'+Math.round(c.split*100)+'"'+dis+'></div>'+
+   '<div class="field"><label class="label" for="s-factor">Points kept while waiting for approval (%)</label><input id="s-factor" type="number" min="0" max="100" value="'+Math.round(c.factor*100)+'"'+dis+'></div>'+
+   '<div class="field"><label class="label" for="s-rfactor">Points kept if rejected (%)</label><input id="s-rfactor" type="number" min="0" max="100" value="'+Math.round((Number(c.rejectFactor)||0)*100)+'"'+dis+'></div></div>'+
+  '<section class="group"><h3>Tasks and points</h3><p class="small muted" style="margin:0">Change the points here, tap Edit to change the name, frequency or details, or ✕ to remove a task from the Log tab.</p><div class="list">'+visibleTasks().map(t=>'<div class="setrow"><label for="pt-'+t.id+'"><span style="font-weight:600">'+esc(t.name)+'</span><br><span class="small muted">'+esc(t.freq||"")+'</span></label><div class="acts" style="flex-wrap:nowrap;align-items:center"><input id="pt-'+t.id+'" type="number" min="0" step="1" value="'+ptsOf(t.id)+'" aria-label="Points for '+esc(t.name)+'"'+dis+'><button class="btn sm ghost" data-act="edittask" data-id="'+t.id+'">Edit</button>'+
+    (S.confirmDelTask===t.id?'<button class="btn sm" data-act="deltask" data-id="'+t.id+'">Remove</button><button class="btn sm ghost" data-act="nodeltask">Keep</button>':'<button class="btn sm ghost" data-act="askdeltask" data-id="'+t.id+'" aria-label="Remove '+esc(t.name)+'">✕</button>')+'</div></div>').join("")+'</div></section>'+
+  '<div class="actions"><button class="btn" data-act="saveset"'+dis+'>Save settings</button></div>'+
+  removedSection()+customSection()+
+  '<section class="group"><h3>This phone</h3><div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span>Logging as <b>'+esc(nm(S.me))+'</b></span><button class="btn sm ghost" data-act="switch">Switch to '+esc(nm(other(S.me)))+'</button></div></section>'+
+  '<section class="group"><h3>Account</h3><div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span class="small">'+esc(S.email||"")+'</span><button class="btn sm ghost" data-act="logout">Sign out</button></div></section>'+
+  '<p class="small muted" style="text-align:center;margin:0">App version '+APP_VERSION+'</p>';
+  return h;
+}
+
+function customSection(){
+  let h='<section class="group"><h3>Add a task</h3><p class="small muted" style="margin:0">It appears in the Log tab on both phones.</p>';
+  const opts=BASE_GROUPS.concat(["Other"]).map(g=>'<option>'+esc(g)+'</option>').join("");
+  h+='<div class="card"><div class="custom-form">'+
+    '<div class="field wide"><label class="label" for="ct-name">Task name</label><input id="ct-name" maxlength="80" placeholder="e.g. Clean the oven"></div>'+
+    '<div class="field"><label class="label" for="ct-group">Section</label><select id="ct-group">'+opts+'</select></div>'+
+    '<div class="field"><label class="label" for="ct-pts">Points</label><input id="ct-pts" type="number" min="0" step="1" value="10"></div>'+
+    '<div class="field"><label class="label" for="ct-freq">Frequency (text)</label><input id="ct-freq" maxlength="60" placeholder="e.g. 1 time / month"></div>'+
+    '<div class="field"><label class="label" for="ct-wk">Target per week</label><input id="ct-wk" type="number" min="0" step="0.25" value="1"></div>'+
+    '<div class="field wide"><label class="label" for="ct-desc">What is included</label><textarea id="ct-desc" maxlength="400" placeholder="What counts as done for this task"></textarea></div>'+
+  '</div><div class="actions" style="margin-top:12px"><button class="btn" data-act="addtask">Add task</button></div></div></section>';
+  return h;
+}
+
+function editSheetHTML(){
+  const t=taskOf(S.esheet.id);if(!t)return"";
+  const opts=[...new Set(BASE_GROUPS.concat(customTasks().map(x=>x.g),[t.g,"Other"]))].map(g=>'<option'+(g===t.g?' selected':'')+'>'+esc(g)+'</option>').join("");
+  return'<div class="scrim" data-act="eclose"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="et-t" data-stop="1">'+
+   '<h2 id="et-t">Edit task</h2>'+
+   '<div class="custom-form">'+
+    '<div class="field wide"><label class="label" for="et-name">Task name</label><input id="et-name" maxlength="80" value="'+esc(t.name)+'"></div>'+
+    '<div class="field"><label class="label" for="et-group">Section</label><select id="et-group">'+opts+'</select></div>'+
+    '<div class="field"><label class="label" for="et-pts">Points</label><input id="et-pts" type="number" min="0" step="1" value="'+ptsOf(t.id)+'"></div>'+
+    '<div class="field"><label class="label" for="et-freq">Frequency (text)</label><input id="et-freq" maxlength="60" value="'+esc(t.freq||"")+'"></div>'+
+    '<div class="field"><label class="label" for="et-wk">Target per week</label><input id="et-wk" type="number" min="0" step="0.25" value="'+(Number(t.wk)||0)+'"></div>'+
+    '<div class="field wide"><label class="label" for="et-desc">What is included</label><textarea id="et-desc" maxlength="400">'+esc(t.desc||"")+'</textarea></div>'+
+   '</div>'+
+   '<p class="small muted" style="margin:0">Target per week sets the "x / y this week" counter in the Log tab. Use 0.5 for every two weeks, 0.25 for once a month. Points changes also apply to past entries.</p>'+
+   '<div class="actions">'+(isBuiltin(t.id)&&(editsMap()[t.id]||(S.cfg.points||{})[t.id]!=null)?'<button class="btn ghost" data-act="ereset">Reset to original</button>':'')+
+   '<button class="btn ghost" data-act="eclose">Cancel</button><button class="btn" data-act="esave">Save</button></div>'+
+  '</div></div>';
+}
+function entryById(id){return S.entries.find(x=>x.id===id)||Object.values(S.rangeCache).flatMap(c=>c.data||[]).find(x=>x.id===id)}
+function entrySheetHTML(){
+  const x=S.xsheet;const e=entryById(x.id);if(!e)return"";
+  const list=visibleTasks();if(!list.some(t=>t.id===x.task)){const t=taskOf(x.task);if(t)list.unshift(t)}
+  const opts=list.map(t=>'<option value="'+t.id+'"'+(t.id===x.task?' selected':'')+'>'+esc(t.name)+'</option>').join("");
+  const whoBtn=(w,l)=>'<button class="choice" data-act="xwho" data-w="'+w+'" aria-pressed="'+(x.doer===w)+'"><span class="dot '+w+'"></span>'+esc(l)+'</button>';
+  const resets=e.loggedBy===S.me&&e.status!=="pending";
+  return'<div class="scrim" data-act="xclose"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="xe-t" data-stop="1">'+
+   '<h2 id="xe-t">Edit logged task</h2>'+
+   '<div class="field"><label class="label" for="xe-task">Task</label><select id="xe-task">'+opts+'</select></div>'+
+   '<div class="field"><span class="label">Who did it?</span><div class="choices">'+whoBtn("p1",nm("p1"))+whoBtn("p2",nm("p2"))+whoBtn("both","Together")+'</div></div>'+
+   '<div class="field"><label class="label" for="xe-date">Date</label><input id="xe-date" type="date" value="'+x.date+'" max="'+todayStr()+'"></div>'+
+   stepper("How many times?",x.count,"xcnt")+
+   (resets?'<p class="small muted" style="margin:0">You logged this task, so changing it sends it back to '+esc(nm(other(S.me)))+' for approval.</p>':'')+
+   '<div class="actions"><button class="btn ghost" data-act="xclose">Cancel</button><button class="btn" data-act="xsave">Save</button></div>'+
+  '</div></div>';
+}
+function readEntrySheet(){const x=S.xsheet;if(!x)return;const t=document.getElementById("xe-task");if(t)x.task=t.value;const d=document.getElementById("xe-date");if(d&&d.value)x.date=d.value}
+async function saveEntry(){
+  readEntrySheet();const x=S.xsheet;const e=entryById(x.id);if(!e)return;
+  const upd={task:x.task,date:x.date,doer:x.doer,count:x.count,editedBy:S.me,editedAt:new Date().toISOString()};
+  const changed=upd.task!==e.task||upd.date!==e.date||upd.doer!==e.doer||upd.count!==cnt(e);
+  if(!changed){S.xsheet=null;render();return}
+  if(e.loggedBy===S.me&&e.status!=="pending")Object.assign(upd,{status:"pending",approvedBy:null,approvedAt:null,rejectedBy:null,rejectedAt:null,rejectNote:null,rejectPhoto:null});
+  try{await S.db.doc("entries/"+x.id).update(upd);S.rangeCache={};S.xsheet=null;render();toast("Logged task updated.")}
+  catch(_){toast("Could not save. Try again.")}
+}
+async function saveEdit(){
+  const id=S.esheet.id;const f=x=>document.getElementById(x);
+  const name=f("et-name").value.trim();if(!name){toast("The task needs a name.");return}
+  const ch={name:name.slice(0,80),g:f("et-group").value||"Other",freq:f("et-freq").value.trim().slice(0,60)||"As needed",wk:Math.max(0,Number(f("et-wk").value)||0),desc:f("et-desc").value.trim().slice(0,400)};
+  const pts=Math.max(0,Number(f("et-pts").value)||0);
+  const points={...(S.cfg.points||{})};const edits={...editsMap()};let custom=customTasks();
+  if(isBuiltin(id)){edits[id]=ch;const base=TASKS.find(t=>t.id===id).pts;if(pts!==base)points[id]=pts;else delete points[id]}
+  else{custom=custom.map(t=>t.id===id?{...t,...ch,pts}:t);delete points[id];delete edits[id]}
+  try{await S.db.doc("config/main").set({...S.cfg,points,edits,custom});S.esheet=null;render();toast("Task updated for both of you.")}
+  catch(_){toast("Could not save the task.")}
+}
+async function resetEdit(){
+  const id=S.esheet.id;const points={...(S.cfg.points||{})};const edits={...editsMap()};delete points[id];delete edits[id];
+  try{await S.db.doc("config/main").set({...S.cfg,points,edits});S.esheet=null;render();toast("Task reset to the original.")}
+  catch(_){toast("Could not reset the task.")}
+}
+
+function removedSection(){
+  const list=removedTasks();if(!list.length)return"";
+  return'<section class="group"><h3>Removed tasks</h3><div class="list">'+list.map(t=>'<div class="row"><div class="main"><div class="t">'+esc(t.name)+'</div><div class="s">'+esc(t.g)+' · '+fmt(ptsOf(t.id))+' pts</div></div><button class="btn sm ghost" data-act="restoretask" data-id="'+t.id+'">Restore</button></div>').join("")+'</div></section>';
+}
+
+function rejectSheetHTML(){
+  const rs=S.rsheet;const e=S.entries.find(x=>x.id===rs.id);const tk=e&&taskOf(e.task);
+  return'<div class="scrim" data-act="rclose"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rj-t" data-stop="1">'+
+   '<h2 id="rj-t">Reject: '+esc(tk?tk.name:"task")+'</h2>'+
+   (e?'<p class="small muted" style="margin:0">'+esc(nm(e.doer))+' · '+fmtDay(e.date)+'. A rejected task earns '+Math.round((Number(S.cfg.rejectFactor)||0)*100)+'% of its points.</p>':'')+
+   '<div class="field"><label class="label" for="rj-note">Why? (required)</label><textarea id="rj-note" maxlength="1000" placeholder="e.g. The sink is still dirty">'+esc(rs.note||"")+'</textarea></div>'+
+   '<div class="field"><span class="label">Photo (optional)</span><div class="photo-pick">'+(rs.photo?'<img class="thumb" src="'+rs.photo+'" alt="Selected photo"><button class="btn sm ghost" data-act="rnophoto">Remove photo</button>':'<input id="rj-photo" type="file" accept="image/*">')+(rs.busy?'<span class="small muted">Preparing photo…</span>':'')+'</div></div>'+
+   (rs.err?'<div class="notice">'+esc(rs.err)+'</div>':'')+
+   '<div class="actions"><button class="btn ghost" data-act="rclose">Cancel</button><button class="btn" id="rj-go" data-act="rsave">Reject task</button></div>'+
+  '</div></div>';
+}
+
+function photoViewerHTML(){
+  const p=S.photo;
+  return'<div class="scrim center" data-act="pclose"><div class="viewer" data-stop="1">'+
+    (p.loading?'<div class="muted">Loading photo…</div>':p.err?'<div class="muted">'+esc(p.err)+'</div>':'<img src="'+p.src+'" alt="Photo">')+
+    '<button class="btn ghost sm" data-act="pclose">Close</button></div></div>';
+}
+
+function sheetHTML(){
+  const sh=S.sheet;const tk=taskOf(sh.task);
+  return'<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-t" data-stop="1">'+
+   '<div class="top"><h2 id="sh-t">'+esc(tk.name)+'</h2><span class="pts">'+fmt(ptsOf(tk.id))+'<small>pts</small></span></div>'+
+   '<div class="desc"><b>Included:</b> '+esc(tk.desc||"")+'<br><span class="small">Target: '+esc(tk.freq||"")+'</span></div>'+
+   '<div class="field"><span class="label">Who did it?</span><div class="choices">'+
+     '<button class="choice" data-act="who" data-w="me" aria-pressed="'+(sh.who==="me")+'"><span class="dot '+S.me+'"></span>'+esc(nm(S.me))+'</button>'+
+     '<button class="choice" data-act="who" data-w="both" aria-pressed="'+(sh.who==="both")+'"><span class="dot both"></span>Together</button></div></div>'+
+   '<div class="field"><label class="label" for="sh-date">Date</label><input id="sh-date" type="date" value="'+sh.date+'" max="'+todayStr()+'"></div>'+
+   stepper("How many times?",sh.count||1,"cnt")+
+   '<div class="field"><span class="label">Photo (optional)</span><div class="photo-pick">'+(sh.photo?'<img class="thumb" src="'+sh.photo+'" alt="Selected photo"><button class="btn sm ghost" data-act="nophoto">Remove photo</button>':'<input id="sh-photo" type="file" accept="image/*">')+(sh.busy?'<span class="small muted">Preparing photo…</span>':'')+'</div></div>'+
+   '<p class="small muted" style="margin:0">'+esc(nm(other(S.me)))+' will be asked to approve it. Until then it counts for '+Math.round(S.cfg.factor*100)+'% of the points.</p>'+
+   '<div class="actions"><button class="btn ghost" data-act="close">Cancel</button><button class="btn" id="save" data-act="save">Log as done</button></div>'+
+  '</div></div>';
+}
+
+function render(){
+  const app=document.getElementById("app"),tabs=document.getElementById("tabs"),ov=document.getElementById("overlay");
+  if(S.error==="config"){app.innerHTML=header()+'<div class="notice">The app is not connected to its database yet. Paste your Firebase settings into config.js.</div>';tabs.hidden=true;return}
+  if(S.error==="denied"){app.innerHTML=header()+'<div class="notice">This account is not allowed to use the app. Check that its email is listed in the Firestore rules.</div><div class="actions"><button class="btn ghost" data-act="logout">Sign out</button></div>';tabs.hidden=true;return}
+  if(!S.ready){return}
+  if(S.login){app.innerHTML=viewLogin();tabs.hidden=true;ov.innerHTML="";return}
+  if(!S.me){app.innerHTML=viewPick();tabs.hidden=true;ov.innerHTML="";return}
+  const ae=document.activeElement;const fid=ae&&ae.id&&app.contains(ae)?ae.id:null;let sel=null;try{if(fid&&ae.selectionStart!=null)sel=[ae.selectionStart,ae.selectionEnd]}catch(_){}
+  const v={log:viewLog,approve:viewApprove,summary:viewSummary,history:viewHistory,chat:viewChat,settings:viewSettings}[S.view]();
+  app.innerHTML=(S.error==="sub"?'<div class="notice">Live updates stopped. Reload the page to reconnect.</div>':'')+v;
+  if(fid){const el=document.getElementById(fid);if(el){try{el.focus({preventScroll:true});if(sel&&el.setSelectionRange)el.setSelectionRange(sel[0],sel[1])}catch(_){}}}
+  if(S.view==="chat"){const last=S.msgs.length?S.msgs[S.msgs.length-1].createdAt||"":"";if(last&&last>lastRead())setLastRead(last);
+    if(S.msgs.length!==S.lastSeenCount){S.lastSeenCount=S.msgs.length;scrollChat()}}
+  const n=toApprove().length;const un=unreadCount();
+  tabs.hidden=false;
+  tabs.innerHTML='<nav>'+[["log","Log"],["approve","Approve"],["summary","Summary"],["history","History"],["chat","Chat"],["settings","Settings"]].map(([k,l])=>{const b=k==="approve"?n:k==="chat"?un:0;return'<button data-act="tab" data-v="'+k+'"'+(S.view===k?' aria-current="page"':'')+'>'+ICON[k]+l+(b?'<span class="badge">'+b+'</span>':'')+'</button>'}).join("")+'</nav>';
+  ov.innerHTML=S.photo?photoViewerHTML():S.xsheet?entrySheetHTML():S.esheet?editSheetHTML():S.rsheet?rejectSheetHTML():S.sheet?sheetHTML():"";
+}
+
+window.addEventListener("error",e=>{try{toast("Error: "+(e.message||"unknown"))}catch(_){}});
+document.addEventListener("click",ev=>{
+  const el=ev.target.closest("[data-act]");if(!el)return;
+  if(/^(close|rclose|pclose|eclose|xclose)$/.test(el.dataset.act)&&ev.target.closest("[data-stop]")&&!el.matches("button"))return;
+  const a=el.dataset.act;
+  if(a==="tab"){S.view=el.dataset.v;S.confirmDel=null;if(S.view==="history")S.history=null;S.lastSeenCount=-1;render();if(S.view!=="chat")window.scrollTo(0,0)}
+  else if(a==="send")sendMessage();
+  else if(a==="chatnophoto"){S.chatPhoto=null;render()}
+  else if(a==="setme")setMe(el.dataset.p);
+  else if(a==="switch")setMe(other(S.me));
+  else if(a==="open"){S.sheet={task:el.dataset.task,who:"me",date:todayStr()};render()}
+  else if(a==="who"){const d=document.getElementById("sh-date");if(d)S.sheet.date=d.value||S.sheet.date;S.sheet.who=el.dataset.w;render()}
+  else if(a==="close"){S.sheet=null;render()}
+  else if(a==="save"){const d=document.getElementById("sh-date");if(d&&d.value)S.sheet.date=d.value;logTask()}
+  else if(a==="approve")setStatus(el.dataset.id,"approved");
+  else if(a==="reject"){S.rsheet={id:el.dataset.id,note:"",photo:null};render()}
+  else if(a==="rclose"){S.rsheet=null;render()}
+  else if(a==="rsave")rejectTask();
+  else if(a==="rnophoto"){const t=document.getElementById("rj-note");if(t)S.rsheet.note=t.value;S.rsheet.photo=null;render()}
+  else if(a==="nophoto"){const d=document.getElementById("sh-date");if(d&&d.value)S.sheet.date=d.value;S.sheet.photo=null;render()}
+  else if(a==="photo")openPhoto(el.dataset.pid);
+  else if(a==="pclose"){S.photo=null;render()}
+  else if(a==="addtask")addCustomTask();
+  else if(a==="askdeltask"){S.confirmDelTask=el.dataset.id;render()}
+  else if(a==="nodeltask"){S.confirmDelTask=null;render()}
+  else if(a==="deltask")hideTask(el.dataset.id);
+  else if(a==="restoretask")restoreTask(el.dataset.id);
+  else if(a==="edittask"){S.esheet={id:el.dataset.id};render()}
+  else if(a==="cnt"){const d=document.getElementById("sh-date");if(d&&d.value)S.sheet.date=d.value;S.sheet.count=Math.max(1,Math.min(20,(S.sheet.count||1)+Number(el.dataset.d)));render()}
+  else if(a==="editentry"){const e=entryById(el.dataset.id);if(e){S.xsheet={id:e.id,task:e.task,date:e.date,doer:e.doer,count:cnt(e)};render()}}
+  else if(a==="xwho"){readEntrySheet();S.xsheet.doer=el.dataset.w;render()}
+  else if(a==="xcnt"){readEntrySheet();S.xsheet.count=Math.max(1,Math.min(20,S.xsheet.count+Number(el.dataset.d)));render()}
+  else if(a==="xclose"){S.xsheet=null;render()}
+  else if(a==="xsave")saveEntry();
+  else if(a==="eclose"){S.esheet=null;render()}
+  else if(a==="esave")saveEdit();
+  else if(a==="ereset")resetEdit();
+  else if(a==="unapprove")setStatus(el.dataset.id,"pending");
+  else if(a==="askdel"){S.confirmDel=el.dataset.id;render()}
+  else if(a==="nodel"){S.confirmDel=null;render()}
+  else if(a==="del")delEntry(el.dataset.id);
+  else if(a==="mode"){S.mode=el.dataset.m;render()}
+  else if(a==="prev"){S.anchor=S.mode==="week"?addDays(monday(S.anchor),-7):prevMonth(S.anchor);render()}
+  else if(a==="next"){S.anchor=S.mode==="week"?addDays(monday(S.anchor),7):nextMonth(S.anchor);render()}
+  else if(a==="hist"){S.history=null;loadHistory()}
+  else if(a==="saveset")saveSettings();
+  else if(a==="login")doLogin();
+  else if(a==="logout"){firebase.auth().signOut()}
+});
+document.addEventListener("input",ev=>{if(ev.target.id==="chat-input")S.chatDraft=ev.target.value});
+document.addEventListener("change",async ev=>{
+  const id=ev.target.id;
+  if(id==="chat-ask"){const t=taskOf(ev.target.value);if(t){S.chatDraft='Could you do "'+t.name+'" today?';render();const ta=document.getElementById("chat-input");if(ta){ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length)}}return}
+  if(id==="chat-photo"){const file=ev.target.files&&ev.target.files[0];if(!file)return;S.chatBusy=true;render();try{S.chatPhoto=await compressImage(file)}catch(_){toast("Could not read this photo. Try another one.")}S.chatBusy=false;render();return}
+  if(id!=="sh-photo"&&id!=="rj-photo")return;
+  const file=ev.target.files&&ev.target.files[0];if(!file)return;
+  const target=id==="sh-photo"?S.sheet:S.rsheet;if(!target)return;
+  if(id==="sh-photo"){const d=document.getElementById("sh-date");if(d&&d.value)target.date=d.value}
+  else{const t=document.getElementById("rj-note");if(t)target.note=t.value}
+  target.busy=true;render();
+  try{target.photo=await compressImage(file)}catch(_){toast("Could not read this photo. Try another one.")}
+  target.busy=false;render();
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(S.photo){S.photo=null;render();return}if(S.xsheet){S.xsheet=null;render();return}if(S.esheet){S.esheet=null;render();return}if(S.rsheet){S.rsheet=null;render();return}if(S.sheet){S.sheet=null;render()}}if(e.key==="Enter"&&S.login&&e.target.id==="li-pass")doLogin()});
+boot();
+})();
+
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+</script>
+</body>
+</html>
